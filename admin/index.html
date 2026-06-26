@@ -174,35 +174,54 @@
 </div>
 
 <script>
-const STORAGE_KEY = 'shizi_posts';
-const SETTINGS_KEY = 'shizi_settings';
-let editingId = null;
-let tags = [];
+const GITHUB_USER = "shizi-wutong";
+const GITHUB_REPO = "shizi-wutong.github.io";
+const POSTS_PATH = "posts.json";
+const RAW_URL = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/main/${POSTS_PATH}`;
+const API_URL = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${POSTS_PATH}`;
+// Token 存在 sessionStorage，每次刷新需要重新输入（安全）
+let GITHUB_TOKEN = sessionStorage.getItem("gh_token") || "";
+let SETTINGS_KEY = 'shizi_settings';
+let editingId = null, tags = [], posts = [];
 
-function loadPosts() {
-  const data = localStorage.getItem(STORAGE_KEY);
-  return data ? JSON.parse(data) : [
-    { id:1, title:'🎬 《光之勇者》制作记', date:'2026-06-26', tags:['动画','RPG'], summary:'从像素风到高级CG，再到RPG Maker风格——记录一部动画的三种姿态。', content:'<p>用 Canvas 逐像素绘制角色，从勇者的铠甲到魔王的角...</p>' },
-    { id:2, title:'🧩 我的第一个 RMMZ 插件', date:'2026-06-25', tags:['RMMZ','JavaScript'], summary:'从零开始写 RPG Maker MZ 插件踩过的坑。', content:'<p>MZ 的插件本质上是 JavaScript...</p>' },
-    { id:3, title:'🤖 手撸一个 AI 编程智能体', date:'2026-06-24', tags:['AI','Python'], summary:'从零搭建 AI Agent 的完整记录。', content:'<p>核心就三个字：循环、工具、调用。</p>' },
-  ];
+// ===== GitHub API 操作 =====
+async function getPostsSHA() {
+  if (!GITHUB_TOKEN) return null;
+  const r = await fetch(API_URL, { headers: { Authorization: `Bearer ${GITHUB_TOKEN}` } });
+  if (r.ok) return (await r.json()).sha;
+  return null;
 }
 
-function savePosts(posts) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(posts));
-  // 同步到首页（同域下）
+async function loadPosts() {
+  try {
+    const r = await fetch(RAW_URL + "?t=" + Date.now());
+    if (r.ok) { posts = await r.json(); renderTable(); return; }
+  } catch(e) {}
+  posts = [{ id:1, title:"欢迎!", date:"2026-06-26", tags:["公告"], summary:"这是你的第一篇博客", content:"<p>在后台写文章吧！</p>" }];
   renderTable();
 }
 
+async function savePostsToGithub(updatedPosts) {
+  if (!GITHUB_TOKEN) { alert("请先设置 Token！"); return false; }
+  posts = updatedPosts;
+  const sha = await getPostsSHA();
+  const body = { message: "更新博客", content: btoa(unescape(encodeURIComponent(JSON.stringify(posts, null, 2)))) };
+  if (sha) body.sha = sha;
+  const r = await fetch(API_URL, {
+    method: "PUT",
+    headers: { Authorization: `Bearer ${GITHUB_TOKEN}`, "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
+  if (r.ok) { renderTable(); return true; }
+  else { const e = await r.json(); alert("保存失败: " + (e.message || e)); return false; }
+}
+
 function renderTable() {
-  const posts = loadPosts();
   const tbody = document.getElementById('postsBody');
   const empty = document.getElementById('emptyState');
-  if (posts.length === 0) {
-    tbody.innerHTML = '';
-    empty.style.display = 'block';
-    document.getElementById('postsTable').style.display = 'none';
-    return;
+  if (!posts || posts.length === 0) {
+    tbody.innerHTML = ''; empty.style.display = 'block';
+    document.getElementById('postsTable').style.display = 'none'; return;
   }
   empty.style.display = 'none';
   document.getElementById('postsTable').style.display = '';
@@ -210,13 +229,11 @@ function renderTable() {
     <tr>
       <td style="font-weight:600;">${p.title}</td>
       <td style="color:#8a8aaa;">${p.date}</td>
-      <td>${p.tags.map(t=>`<span style="color:#ffd700;font-size:12px;margin-right:4px;">#${t}</span>`).join('')}</td>
-      <td>
-        <div class="actions">
-          <button class="btn btn-outline" style="padding:4px 12px;font-size:12px;" onclick="openEditor(${p.id})">编辑</button>
-          <button class="btn btn-danger" style="padding:4px 12px;font-size:12px;" onclick="deletePost(${p.id})">删除</button>
-        </div>
-      </td>
+      <td>${(p.tags||[]).map(t=>`<span style="color:#ffd700;font-size:12px;margin-right:4px;">#${t}</span>`).join('')}</td>
+      <td><div class="actions">
+        <button class="btn btn-outline" style="padding:4px 12px;font-size:12px;" onclick="openEditor(${p.id})">编辑</button>
+        <button class="btn btn-danger" style="padding:4px 12px;font-size:12px;" onclick="deletePost(${p.id})">删除</button>
+      </div></td>
     </tr>
   `).join('');
 }
@@ -268,14 +285,13 @@ function removeTag(tag) {
   renderTags();
 }
 
-function savePost() {
+async function savePost() {
   const title = document.getElementById('editTitle').value.trim();
   const date = document.getElementById('editDate').value;
   const summary = document.getElementById('editSummary').value.trim();
   const content = document.getElementById('editContent').value.trim();
   if (!title || !content) { alert('标题和正文不能为空'); return; }
 
-  let posts = loadPosts();
   if (editingId) {
     const idx = posts.findIndex(p => p.id === editingId);
     posts[idx] = { ...posts[idx], title, date, tags: [...tags], summary, content };
@@ -283,16 +299,15 @@ function savePost() {
     const newId = Math.max(...posts.map(p=>p.id), 0) + 1;
     posts.push({ id:newId, title, date, tags:[...tags], summary, content });
   }
-  savePosts(posts);
-  closeEditor();
-  renderTable();
+  const ok = await savePostsToGithub(posts);
+  if (ok) { closeEditor(); }
 }
 
-function deletePost(id) {
-  if (!confirm('确定删除这篇文​​章？')) return;
-  let posts = loadPosts().filter(p => p.id !== id);
-  savePosts(posts);
-  renderTable();
+async function deletePost(id) {
+  if (!confirm('确定删除这篇文章？')) return;
+  const updated = posts.filter(p => p.id !== id);
+  const ok = await savePostsToGithub(updated);
+  if (ok) { renderTable(); }
 }
 
 function showView(view) {
@@ -313,12 +328,25 @@ function saveSettings() {
   alert('设置已保存！');
 }
 
+function setToken() {
+  const token = document.getElementById('tokenInput').value.trim();
+  if (token) {
+    GITHUB_TOKEN = token;
+    sessionStorage.setItem("gh_token", token);
+    document.getElementById("tokenSection").style.display = "none";
+    loadPosts();
+  }
+}
+
 // ===== 登录验证 =====
 (function() {
   const settings = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
   const correctPwd = settings.password || 'shizi2026';
   const loggedIn = sessionStorage.getItem('admin_logged_in');
-  if (loggedIn === 'true') { renderTable(); return; }
+  if (loggedIn === 'true') {
+    loadPosts();
+    return;
+  }
 
   const app = document.getElementById('app');
   app.innerHTML = `
@@ -326,17 +354,24 @@ function saveSettings() {
       <div class="login-box">
         <div style="font-size:48px;margin-bottom:12px;">🔐</div>
         <h2>后台管理</h2>
-        <p>请输入密码登录</p>
-        <input type="password" id="loginPwd" placeholder="输入密码" onkeydown="if(event.key==='Enter')doLogin()">
+        <p>请输入密码</p>
+        <input type="password" id="loginPwd" placeholder="密码" onkeydown="if(event.key==='Enter')doLogin()" style="margin-bottom:16px;">
+        <input type="password" id="tokenInput" placeholder="GitHub Token (ghp_...)" onkeydown="if(event.key==='Enter')doLogin()" style="margin-bottom:12px;">
         <button class="btn btn-primary" style="width:100%;" onclick="doLogin()">登录</button>
-        <div class="error" id="loginError">密码错误，请重试</div>
-        <p style="color:#555;font-size:12px;margin-top:16px;">默认密码: shizi2026</p>
+        <div class="error" id="loginError">密码或 Token 错误</div>
+        <p style="color:#555;font-size:12px;margin-top:16px;">
+          密码: shizi2026<br>
+          Token: 在 github.com/settings/tokens 创建
+        </p>
       </div>
     </div>
   `;
   window.doLogin = function() {
     const pwd = document.getElementById('loginPwd').value;
-    if (pwd === correctPwd) {
+    const token = document.getElementById('tokenInput').value.trim();
+    if (pwd === correctPwd && token) {
+      GITHUB_TOKEN = token;
+      sessionStorage.setItem("gh_token", token);
       sessionStorage.setItem('admin_logged_in', 'true');
       location.reload();
     } else {
