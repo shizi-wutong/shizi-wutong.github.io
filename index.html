@@ -236,32 +236,40 @@
 <!-- ===== 联系 ===== -->
 <section id="contact">
   <div class="section-label">/ contact</div>
-  <h2 class="section-title">与我 <span>联系</span></h2>
-  <p class="section-sub">有任何想法或合作意向，欢迎留言</p>
+  <h2 class="section-title">联系 <span>我</span></h2>
+  <p class="section-sub">欢迎交流与合作</p>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;max-width:700px;margin:0 auto 40px;">
+    <a href="mailto:480993942@qq.com" class="contact-card" style="display:block;background:var(--card);border-radius:12px;padding:24px;text-align:center;border:1px solid rgba(255,255,255,0.03);text-decoration:none;color:var(--text);transition:all 0.3s;">
+      <div style="font-size:32px;margin-bottom:8px;">📧</div>
+      <div style="font-size:14px;font-weight:600;">邮箱</div>
+      <div style="font-size:13px;color:var(--text2);margin-top:4px;">480993942@qq.com</div>
+    </a>
+    <a href="https://github.com/shizi-wutong" target="_blank" class="contact-card" style="display:block;background:var(--card);border-radius:12px;padding:24px;text-align:center;border:1px solid rgba(255,255,255,0.03);text-decoration:none;color:var(--text);transition:all 0.3s;">
+      <div style="font-size:32px;margin-bottom:8px;">🐙</div>
+      <div style="font-size:14px;font-weight:600;">GitHub</div>
+      <div style="font-size:13px;color:var(--text2);margin-top:4px;">@shizi-wutong</div>
+    </a>
+    <a href="https://shizi-wutong.github.io" target="_blank" class="contact-card" style="display:block;background:var(--card);border-radius:12px;padding:24px;text-align:center;border:1px solid rgba(255,255,255,0.03);text-decoration:none;color:var(--text);transition:all 0.3s;">
+      <div style="font-size:32px;margin-bottom:8px;">🌐</div>
+      <div style="font-size:14px;font-weight:600;">网站</div>
+      <div style="font-size:13px;color:var(--text2);margin-top:4px;">shizi-wutong.github.io</div>
+    </a>
+  </div>
+
   <form class="contact-form" id="contactForm" action="https://formspree.io/f/你的ID" method="POST">
     <div class="form-row">
       <div class="form-group"><label>姓名 *</label><input type="text" name="name" required></div>
       <div class="form-group"><label>邮箱 *</label><input type="email" name="email" required></div>
     </div>
-    <div class="form-group"><label>主题</label><input type="text" name="subject" placeholder="想聊什么？"></div>
     <div class="form-group"><label>留言 *</label><textarea name="message" required></textarea></div>
-    <button type="submit" class="btn btn-primary form-submit">发送留言 ✦</button>
+    <button type="submit" class="btn btn-primary form-submit">发送 ✦</button>
     <div class="form-success" id="formSuccess">
-      <div style="font-size:48px;margin-bottom:16px;">✅</div>
+      <div style="font-size:48px;margin-bottom:16px;color:#44cc44;">✓</div>
       <h3>发送成功！</h3>
       <p>感谢你的留言，我会尽快回复。</p>
     </div>
   </form>
-
-  <div class="comments-section">
-    <h3>💬 留言与讨论</h3>
-    <div class="giscus-frame" id="giscus-placeholder">
-      <p style="text-align:center;color:var(--text2);padding:40px;">
-        ⚙️ 评论功能已集成 Giscus<br>
-        <span style="font-size:13px;">配置 GitHub Discussions 后自动启用</span>
-      </p>
-    </div>
-  </div>
 </section>
 
 <footer>© 2026 柿子梧桐 · 用 ❤️ 和代码建造</footer>
@@ -313,9 +321,8 @@ addEventListener('scroll',()=>document.getElementById('navbar').classList.toggle
 const BLOG_KEY = 'shizi_posts';
 let posts = JSON.parse(localStorage.getItem(BLOG_KEY)) || [
   { id:1, title:'🎬 《光之勇者》制作记', date:'2026-06-26', tags:['动画','RPG'], summary:'从像素风到高级CG，再到RPG Maker风格——记录一部动画的三种姿态。', content:'<p><strong>一开始，我只是想做一个简单的动画。</strong></p><p>没想到最后变成了三个版本：像素风、游戏CG风、RPG Maker风。每个版本都有自己的味道。</p><h3>像素风</h3><p>用 Canvas 逐像素绘制角色，从勇者的铠甲到魔王的角，一块块拼出来。虽然耗时，但那种复古的味道无可替代。</p><h3>CG 风</h3><p>加入渐变光影、粒子特效、手绘角色。视觉效果更华丽，但少了些像素的纯粹。</p><h3>RPG Maker 风</h3><p>综合了前两者的优点——保留像素的 charm，加上 RPG Maker 经典的对话框和状态栏。</p><p>如果你也在做类似的项目，建议先想清楚想要什么风格，然后再动手。</p>' },
-  { id:2, title:'🧩 我的第一个 RMMZ 插件', date:'2026-06-25', tags:['RMMZ','JavaScript','插件'], summary:'从零开始写一个 RPG Maker MZ 插件，遇到了哪些坑，怎么解决的。', content:'<p>写 RPG Maker MZ 插件其实比想象中简单。</p><p>MZ 的插件本质上是 JavaScript 文件，通过 PluginManager 注册到游戏引擎中。</p><h3>遇到的坑</h3><ol><li><strong>Rectangle 参数</strong> — MZ 的 Window 初始化需要 <code>new Rectangle(x,y,w,h)</code>，不是分开的参数</li><li><strong>drawFace vs drawActorFace</strong> — 函数名和 MV 不一样，踩坑了</li><li><strong>编码问题</strong> — 记事本保存 ANSI 会导致乱码，必须 UTF-8</li></ol><p>最终插件成功运行，在地图左上角显示 HP/MP 状态条，支持自定义位置和颜色。</p>' },
-  { id:3, title:'🤖 手撸一个 AI 编程智能体', date:'2026-06-24', tags:['AI','Python','Agent'], summary:'从零搭建 AI Agent 的完整记录，包括 Agent 循环、工具系统、Function Calling。', content:'<p>你有没有想过，像 AtomCode 这样的 AI 编程智能体是怎么工作的？</p><p>核心就三个字：<strong>循环</strong>、<strong>工具</strong>、<strong>调用</strong>。</p><h3>Agent 循环</h3><p>用户输入 → 模型思考 → 调用工具 → 观察结果 → 再思考 → 再调用 → 完成</p><h3>工具系统</h3><p>read_file、write_file、bash、web_search、web_fetch……每个工具就是一个函数。</p><h3>Function Calling</h3><p>用 OpenAI 兼容 API 的 tools 参数，让模型自己决定什么时候调用什么工具。</p><p>整个过程大约写了 300 行 Python，核心逻辑不到 100 行。AI 没有那么神秘！</p>' },
-];
+  { id:2, title:'🧩 我的第一个 RMMZ 插件', date:'2026-06-25', tags:['RMMZ','JavaScript','插件'], summary:'从零开始写一个 RPG Maker MZ 插件，遇到了哪些坑，怎么解决的。', content:'<p>写 RPG Maker MZ 插件其实比想象中简单。</p><p>MZ 的插件本质上是 JavaScript 文件，通过 PluginManager 注册到游戏引擎中。</p><h3>遇到的坑</h3><ol><li><strong>Rectangle 参数</strong> — MZ 的 Window 初始化需要 <code>new Rectangle(x,y,w,h)</code>，不是分开的参数</li><li><strong>drawFace vs drawActorFace</strong> — 函数名和 MV 不一样，踩坑了</li><li><strong>编码问题</strong> — 记事本保存 ANSI 会导致乱码，必须 UTF-8</li></ol><p>最终插件成功运行，在地图左上角显示 HP/MP 状态条，支持自定义位置和颜色。</p>' }
+  ;
 
 function renderBlog() {
   const grid = document.getElementById('blogGrid');
